@@ -9,7 +9,7 @@ pitcher_pitch_metrics <- function(data) {
     # using recode will allow us to save space on the document
     dplyr:: mutate(TaggedPitchType = factor(TaggedPitchType, levels = c("Fastball", "Sinker", "Cutter","Curveball", "Slider", "Changeup", "Splitter", 'Knuckleball', 'Other')),
                    TaggedPitchType = dplyr::recode(TaggedPitchType, Fastball = "FB", Curveball = 'CB', Sinker = 'SI', Slider = 'SL',
-                                            Cutter = 'CT', Changeup = 'CH', Splitter = 'SPL', Knuckleball = 'KN', Other = 'OT' )
+                                                   Cutter = 'CT', Changeup = 'CH', Splitter = 'SPL', Knuckleball = 'KN', Other = 'OT' )
     ) %>%
     dplyr::summarise('No.' = n(),
                      'Usage' = n(),
@@ -93,6 +93,14 @@ pitcher_plot <- function(path_to_csv_file, pitcher_name) {
 
 }
 #
+#' quick pitch characteristics table
+#'
+#' @param path_to_file,
+#' @return The final dataframe.
+#' @examples
+#' db_to_bats('2024-05-10')
+#'
+#' @export
 game_check <- function(path_to_file) {
   game_test <- read.csv(path_to_file) %>%
     select(PitchNo, Inning, Top.Bottom, PAofInning, PitchofPA, Pitcher, Batter, Balls, Strikes, PitchCall, KorBB, PlayResult) %>%
@@ -100,8 +108,9 @@ game_check <- function(path_to_file) {
     dplyr::mutate(#check = n_distinct(Batter),
       pa_check = ifelse(n_distinct(Batter) == 1, T, F),
       pitch_check = ifelse(lag(PitchofPA) < PitchofPA, T, F),
-      count_check = ifelse(paste(Balls, Strikes) != lag(paste(Balls, Strikes)), T,
+      count_check = ifelse(paste(Balls, Strikes) != lag(paste(Balls, Strikes) ), T,
                            ifelse(paste(Balls, Strikes) == lag(paste(Balls, Strikes)) & lag(PitchCall) %in% c('Foul'), T, F)),
+      across(c(pa_check, pitch_check, count_check), ~ifelse(is.na(.),T,.) )
     ) %>%
     ungroup()
 
@@ -114,4 +123,121 @@ game_check <- function(path_to_file) {
   )
 
   return(game_test)
+}
+
+#
+#' quick pitch characteristics table
+#'
+#' @param database_connection,
+#' @return The final dataframe.
+#' @examples
+#' db_to_bats('2024-05-10')
+#'
+#' @export
+check_player_teams <- function(database_connection){
+
+  # Batters, current correct = 0 rows
+  suppressMessages(
+    print(
+      RSQLite::dbGetQuery(database_connection, 'SELECT * FROM yak_24') %>%
+        dplyr::group_by(Batter, BatterTeam) %>%
+        dplyr::summarise(
+          # savant Batting
+          PA = length(unique(GameID, Inning, PAofInning))
+        ) %>%
+        dplyr::ungroup() %>%
+        filter(duplicated(Batter) | duplicated(Batter, fromLast = T))
+    )
+  )
+  # Pitchers, current correct = 0 rows
+  suppressMessages(
+    print(
+      RSQLite::dbGetQuery(database_connection, 'SELECT * FROM yak_24') %>%
+        dplyr::group_by(Pitcher, PitcherTeam) %>%
+        summarise(
+          # savant Batting
+          PA = length(unique(GameID, Inning, PAofInning))
+        ) %>%
+        dplyr::ungroup() %>%
+        filter(duplicated(Pitcher) | duplicated(Pitcher, fromLast = T))
+    )
+  )
+  # Catchers, current correct = 0 rows
+  suppressMessages(
+    print(
+      RSQLite::dbGetQuery(database_connection, 'SELECT * FROM yak_24') %>%
+        dplyr::group_by(Catcher, CatcherTeam) %>%
+        dplyr::summarise(
+          # savant Batting
+          n = n()
+        ) %>%
+        dplyr::ungroup() %>%
+        filter(duplicated(Catcher) | duplicated(Catcher, fromLast = T))
+    )
+  )
+
+}
+
+
+#
+#' quick pitch characteristics table
+#'
+#' @param database_connection,
+#' @return The final dataframe.
+#' @examples
+#' db_to_bats('2024-05-10')
+#'
+#' @export
+check_player_names <- function(database_connection){
+  # ----- Match Player Names -----
+  # This code down here will take each player's name from the frontier league website and compare it up against Yakkertech player names.
+  # sometimes, YT playernames are not formatted/spelled correctly, so it will cause issues when trying to join stats from both sources
+  # ideally, we wont have any NA in either name column, but that's currently not the case
+  # If there is an NA in the FL_Name column, it can mean that there is a player on the roster that has not played yet (either injured, visa problems) or misspelled
+  # If there is an NA in the YT_Name column, it usually means that the name is misspelled somewhere.
+  # You then need to investigate to find the right spelling of the name so it can match (FrontierLeague.com, baseball reference, etc)
+  # Then let me know the incorrect spelling, and what the spelling should be!!!!
+
+  # Hitters, current correct rows for hit should be 215
+  fl_h <- RSQLite::dbGetQuery(database_connection, 'SELECT * from front24 order by NAME') %>%
+    filter(!grepl('P', POS)) %>%
+    filter(!grepl('Player|Team', NAME)) %>%
+    filter(AB > 0) %>%
+    select(NAME, TEAM)
+
+  yak_h <- RSQLite::dbGetQuery(database_connection, 'SELECT distinct Batter from yak_24 order by Batter')
+
+  hit <<- fl_h %>%
+    dplyr::full_join(yak_h, by = c('NAME' = 'Batter'), keep = T) %>%
+    dplyr::rename(FL_Name = NAME,
+                  YT_Name = Batter)
+
+  # Pitchers, current correct rows for pitch should be 231
+  fl_p <- RSQLite::dbGetQuery(database_connection, 'SELECT * from front_p24 order by NAME') %>%
+    filter(!grepl('Player|Team', NAME)) %>%
+    filter(APP > 0) %>%
+    select(NAME, TEAM)
+
+  yak_p <- RSQLite::dbGetQuery(database_connection, 'SELECT distinct Pitcher from yak_24 order by Pitcher')
+
+  pitch <<- fl_p %>%
+    dplyr::full_join(yak_p, by = c('NAME' = 'Pitcher'), keep = T)%>%
+    dplyr::rename(FL_Name = NAME,
+                  YT_Name = Pitcher)
+
+
+  # Catchers, current correct rows for catch should be 48
+  # Pitchers and batters are a little more straight forward since people pay attention to those when tagging, but there are usually mistakes with catchers
+  fl_c <- RSQLite::dbGetQuery(database_connection, 'SELECT * from front24 order by NAME') %>%
+    filter(!grepl('Player|Team', NAME)) %>%
+    filter(G > 0) %>%
+    filter(grepl('C', POS)) %>%
+    select(NAME, TEAM, POS)
+
+  yak_c <- RSQLite::dbGetQuery(database_connection, 'SELECT distinct Catcher from yak_24 order by Catcher')
+
+  catch <<- fl_c %>%
+    dplyr::full_join(yak_c, by = c('NAME' = 'Catcher'), keep = T)%>%
+    dplyr::rename(FL_Name = NAME,
+                  YT_Name = Catcher)
 }

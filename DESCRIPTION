@@ -1,9 +1,9 @@
 Package: tonybsbl
 Type: Package
-Title: Baseball Functions
-Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
+Title: Baseball Functions for Yakkertech and more!
+Version: 0.3.0
+Author: Tony Medina
+Maintainer: <tonybaseball.llc@gmail.com>
 Description: This package has a lot of various baseball functions and transformations. This package was built for Yakkertech files. Yakkertech files have a very similar column structure to Trackman, so it could work with Trackman as well.
 License: unsure
 Encoding: UTF-8

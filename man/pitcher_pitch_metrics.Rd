@@ -1,6 +1,10 @@
 \name{pitcher_pitch_metrics}
 \alias{pitcher_pitch_metrics}
 \title{Pitcher Pitch Metrics}
+\description{
+Creates a summary table of pitch metrics for the given file.
+Required columns and column names: TaggedPitchType, RelSpeed, SpinAxis, SpinRate, yt_Efficiency, InducedVertBreak, HorzBreak, VertApprAngle, RelHeight, RelSide, Extension.
+}
 \usage{
 pitcher_pitch_metrics(data \%>\% dplyr::group_by(TaggedPitchType, Pitcher))
 
@@ -8,10 +12,7 @@ data \%>\%
     dplyr::group_by(TaggedPitchType, Pitcher) \%>\%
     pitcher_pitch_metrics()
 }
-\description{
-Creates a summary table of pitch metrics for the given file.
-Required columns and column names: TaggedPitchType, RelSpeed, SpinAxis, SpinRate, yt_Efficiency, InducedVertBreak, HorzBreak, VertApprAngle, RelHeight, RelSide, Extension.
-}
+
 \arguments{
   \item{data}{
      Must be a dataframe or tibble. Data must be grouped by TaggedPitchType (and optionally Pitcher if more than one pitcher in data)
@@ -21,6 +22,7 @@ Required columns and column names: TaggedPitchType, RelSpeed, SpinAxis, SpinRate
 }
 \examples{
 data \%>\%
+    # this is required prior to running the function
     dplyr::group_by(TaggedPitchType, Pitcher) \%>\%
     pitcher_pitch_metrics()
 
