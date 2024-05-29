@@ -1,0 +1,46 @@
+pitcher_pitch_metrics <- function(data) {
+  
+  table <- data %>%
+    # using recode will allow us to save space on the document
+    dplyr:: mutate(TaggedPitchType = factor(TaggedPitchType, levels = c("Fastball", "Sinker", "Cutter","Curveball", "Slider", "Changeup", "Splitter", 'Knuckleball', 'Other')),
+                   TaggedPitchType = recode(TaggedPitchType, Fastball = "FB", Curveball = 'CB', Sinker = 'SI', Slider = 'SL',
+                                            Cutter = 'CT', Changeup = 'CH', Splitter = 'SPL', Knuckleball = 'KN', Other = 'OT' )
+    ) %>%
+    group_by(Pitcher,
+             'Pitch' = TaggedPitchType) %>%
+    dplyr::summarize('No.' = n(),
+                     'Usage' = n(),
+                     'Usage %' = n(),
+                     'Velo' = round(mean(RelSpeed, na.rm = TRUE),1),
+                     'VeloMax' = round(max(RelSpeed, na.rm = TRUE),1),
+                     'Tilt' = round(mean(SpinAxis, na.rm = TRUE),0),
+                     'Time' = sapply(`Tilt`, function(x) if (is.na(x)){return(NA)}
+                                     else if(x > 180 & x <= 360){(x/30)-6}
+                                     else if(x == 180){12}
+                                     else{(x/30)+6}),
+                     'HH' = as.integer(Time),
+                     'HH' = sapply(HH, function(x) if (is.na(x)){return(NA)}
+                                   else if(x == 0){x+12}
+                                   else if(x > 12){x-12}
+                                   else{x+0}),
+                     "MM" = formatC(round((Time%%1)*60, digits = 0), width = 2, flag = "0"),
+                     'Tilt' = paste0(HH,":", MM),
+                     'Spin' = round(mean(SpinRate, na.rm = TRUE),0),
+                     'SpinEff%' = round(mean(yt_Efficiency, na.rm= TRUE),0),
+                     'SVR' = round(Spin/RelSpeed,1),
+                     'Vert' = round(mean(InducedVertBreak, na.rm = TRUE),1),
+                     'Horz' = round(mean(HorzBreak, na.rm = TRUE),1),
+                     'VAA' = round(mean(VertApprAngle, na.rm = TRUE),1),
+                     'RelHt' = round(mean(RelHeight, na.rm = TRUE),1),
+                     'RelSide' = round(mean(RelSide, na.rm = TRUE),1),
+                     'Ext' = round(mean(Extension, na.rm = TRUE),1)
+    ) %>%
+    mutate(`Usage %` = round(`Usage %`/sum(`Usage %`),3)*100) %>%
+    dplyr::select(-Usage,-Time,-HH,-MM) %>%
+    arrange(Pitcher, Pitch)
+  
+  return(table)
+  
+}
+
+
