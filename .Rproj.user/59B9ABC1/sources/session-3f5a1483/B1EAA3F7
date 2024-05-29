@@ -3,7 +3,7 @@
     "path": "C:/Users/tdmed/OneDrive/_R_package/tonybsbl/R/functions.R",
     "project_path": "R/functions.R",
     "type": "r_source",
-    "hash": "0",
+    "hash": "1173464825",
     "contents": "",
     "dirty": false,
     "created": 1716985907431.0,
@@ -12,15 +12,15 @@
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "4,10",
+        "cursorPosition": "57,17",
         "scrollLine": "0"
     },
-    "folds": "5|41|46|0|\n57|58|93|0|\n103|38|125|0|\n136|52|178|0|\n190|52|242|0|\n191|29|241|36|\n",
-    "lastKnownWriteTime": 1716994828,
+    "folds": "5|41|46|0|\n57|63|93|0|\n103|38|125|0|\n136|52|178|0|\n190|52|242|0|\n191|29|241|36|\n",
+    "lastKnownWriteTime": 1716995027,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1716994830149,
+    "last_content_update": 1716995027046,
     "read_only": false,
     "read_only_alternatives": []
 }

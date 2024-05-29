@@ -1,6 +1,6 @@
-\name{pitcher_plot}
-\alias{pitcher_plot}
-\title{Pitcher Plot}
+\name{pitcher_mvmt_plot}
+\alias{pitcher_mvmt_plot}
+\title{Pitcher Movement Plot}
 \description{
 This will print out the pitchers who pitched in the dataset, and a plotly interactive plot
 will pop up in the viewer. If you do not know the pitchers in the game, you can initially
@@ -23,7 +23,7 @@ pitcher_plot(path_to_csv_file, pitcher_name)
 # this is required prior to running the function
 path_to_csv_file <- "C:/path_to_file/file.csv"
 
-pitcher_plot(path_to_csv_file, pitcher_name)
+pitcher_mvmt_plot(path_to_csv_file, pitcher_name)
 
 # a ggplotly plot will render in the viewer
 

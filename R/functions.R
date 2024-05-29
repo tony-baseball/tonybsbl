@@ -55,7 +55,7 @@ pitcher_pitch_metrics <- function(data) {
 #' db_to_bats('2024-05-10')
 #'
 #' @export
-pitcher_plot <- function(path_to_csv_file, pitcher_name) {
+pitcher_mvmt_plot <- function(path_to_csv_file, pitcher_name) {
 
   pitchers <- unique(read.csv(path_to_file)$Pitcher)
 
