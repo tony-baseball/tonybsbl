@@ -3,14 +3,19 @@
 #' @param data,
 #' @return a summary of pitch metrics for the given data
 #' @export
-pitcher_pitch_metrics <- function(data) {
+pitcher_pitch_metrics <- function(data, cols_to_group_by) {
 
-  table <- data %>%
+  data_new <<- data %>%
     # using recode will allow us to save space on the document
     dplyr:: mutate(TaggedPitchType = factor(TaggedPitchType, levels = c("Fastball", "Sinker", "Cutter","Curveball", "Slider", "Changeup", "Splitter", 'Knuckleball', 'Other')),
                    TaggedPitchType = dplyr::recode(TaggedPitchType, Fastball = "FB", Curveball = 'CB', Sinker = 'SI', Slider = 'SL',
                                                    Cutter = 'CT', Changeup = 'CH', Splitter = 'SPL', Knuckleball = 'KN', Other = 'OT' )
     ) %>%
+    dplyr::mutate(SpinAxis_inferred = atan2(HorzBreak, InducedVertBreak) * (180/ pi) + 180, .after = SpinAxis
+    )
+
+  table <- data_new %>%
+    dplyr::group_by(dplyr::across(dplyr::all_of(cols_to_group_by))) %>%
     dplyr::summarise('No.' = n(),
                      'Usage' = n(),
                      'Usage %' = n(),
@@ -28,9 +33,23 @@ pitcher_pitch_metrics <- function(data) {
                                    else{x+0}),
                      "MM" = formatC(round((Time%%1)*60, digits = 0), width = 2, flag = "0"),
                      'Tilt' = paste0(HH,":", MM),
-                     'Spin' = round(mean(SpinRate, na.rm = TRUE),0),
+                     'SpinAxis' = round(mean(SpinAxis, na.rm = TRUE),0),
+                     'Tilt_inferred' = round(mean(SpinAxis_inferred, na.rm = TRUE),0),
+                     'Time' = sapply(`Tilt_inferred`, function(x) if (is.na(x)){return(NA)}
+                                     else if(x > 180 & x <= 360){(x/30)-6}
+                                     else if(x == 180){12}
+                                     else{(x/30)+6}),
+                     'HH' = as.integer(Time),
+                     'HH' = sapply(HH, function(x) if (is.na(x)){return(NA)}
+                                   else if(x == 0){x+12}
+                                   else if(x > 12){x-12}
+                                   else{x+0}),
+                     "MM" = formatC(round((Time%%1)*60, digits = 0), width = 2, flag = "0"),
+                     'Tilt_inferred' = paste0(HH,":", MM),
+                     'SpinAxis_inferred' = round(mean(SpinAxis_inferred, na.rm = TRUE),0),
+                     'SpinRate' =  round(mean(SpinRate, na.rm= TRUE),0),
                      'SpinEff%' = round(mean(yt_Efficiency, na.rm= TRUE),0),
-                     'SVR' = round(Spin/Velo,1),
+                     'SVR' = round(SpinRate/Velo,1),
                      'Vert' = round(mean(InducedVertBreak, na.rm = TRUE),1),
                      'Horz' = round(mean(HorzBreak, na.rm = TRUE),1),
                      'VAA' = round(mean(VertApprAngle, na.rm = TRUE),1),
@@ -57,11 +76,11 @@ pitcher_pitch_metrics <- function(data) {
 #' @export
 pitcher_mvmt_plot <- function(path_to_csv_file, pitcher_name) {
 
-  pitchers <- unique(read.csv(path_to_file)$Pitcher)
+  pitchers <- unique(read.csv(path_to_csv_file)$Pitcher)
 
   print(pitchers)
 
-  pitcher <- read.csv(path_to_file) %>%
+  pitcher <- read.csv(path_to_csv_file) %>%
     dplyr::filter(grepl(pitcher_name , Pitcher)) %>%
     dplyr::mutate(TaggedPitchType = recode(TaggedPitchType, Fastball = "FB", Curveball = 'CB', Sinker = 'SI', Slider = 'SL',
                                            Cutter = 'CT', Changeup = 'CH', Other = 'OT', Splitter = 'SPL', Knuckleball = 'KN' ),
