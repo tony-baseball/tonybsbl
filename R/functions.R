@@ -143,6 +143,32 @@ game_check <- function(path_to_file) {
 
   return(game_test)
 }
+#
+game_check_db <- function(data, date) {
+  game_test <- data %>%
+    filter(Date == date) %>%
+    select(PitchNo, Inning, Top.Bottom, PAofInning, PitchofPA, Pitcher, Batter, Balls, Strikes, PitchCall, KorBB, PlayResult) %>%
+    dplyr::group_by(Inning, Top.Bottom, PAofInning) %>%
+    dplyr::mutate(#check = n_distinct(Batter),
+      pa_check = ifelse(n_distinct(Batter) == 1, T, F),
+      pitch_check = ifelse(lag(PitchofPA) < PitchofPA, T, F),
+      count_check = ifelse(paste(Balls, Strikes) != lag(paste(Balls, Strikes) ), T,
+                           ifelse(paste(Balls, Strikes) == lag(paste(Balls, Strikes)) & lag(PitchCall) %in% c('Foul'), T, F)),
+      across(c(pa_check, pitch_check, count_check), ~ifelse(is.na(.),T,.) )
+    ) %>%
+    ungroup()
+
+  print(
+    game_test %>%
+      dplyr::summarise(pa_check = sum(pa_check == FALSE, na.rm = T),
+                       pitch_check = sum(pitch_check == FALSE, na.rm = T),
+                       count = sum(count_check == FALSE, na.rm = T)
+      )
+  )
+
+  return(game_test)
+}
+
 
 #
 #' quick pitch characteristics table
