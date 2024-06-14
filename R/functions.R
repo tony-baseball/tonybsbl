@@ -147,7 +147,8 @@ game_check <- function(path_to_file) {
         T ~ pa_check
       )
     ) %>%
-    ungroup()
+    ungroup() %>%
+    select(-c(pa1,pa2))
 
   print(
     game_test %>%
@@ -170,7 +171,7 @@ game_check_db <- function(data, date) {
       pa_check = ifelse(n_distinct(Batter) == 1, T, F),
       pitch_check = ifelse(lag(PitchofPA) < PitchofPA, T, F),
       count_check = ifelse(paste(Balls, Strikes) != lag(paste(Balls, Strikes) ), T,
-                           ifelse(paste(Balls, Strikes) == lag(paste(Balls, Strikes)) & lag(PitchCall) %in% c('Foul'), T, F)),
+                           ifelse(paste(Balls, Strikes) == lag(paste(Balls, Strikes)) & lag(PitchCall) %in% c('FoulBall'), T, F)),
       across(c(pa_check, pitch_check, count_check), ~ifelse(is.na(.),T,.) )
     ) %>%
     ungroup() %>%
@@ -189,7 +190,8 @@ game_check_db <- function(data, date) {
         T ~ pa_check
       )
     ) %>%
-    ungroup()
+    ungroup()%>%
+    select(-c(pa1,pa2))
 
   print(
     game_test %>%
