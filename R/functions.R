@@ -94,10 +94,10 @@ pitcher_mvmt_plot <- function(path_to_csv_file, pitcher_name) {
     ggplot2::ggplot(data = pitcher, ggplot2::aes(x = HorzBreak, y = InducedVertBreak, color = TaggedPitchType,
                                                  label = pitch_info)) +
       ggplot2::labs(color = "",x = "Horizontal Break (in.)", y = "Induced Vertical Break (in.)",  title = pitcher$Pitcher[1]) +
-      ggplot2::xlim(-22, 22) +
-      ggplot2::ylim(-22, 22) +
-      ggplot2::geom_segment(ggplot2::aes(x = 0, y = -22, xend = 0, yend = 22), size = 1, color = "grey55") +
-      ggplot2::geom_segment(ggplot2::aes(x = -22, y = 0, xend = 22, yend = 0), size = 1, color = "grey55") +
+      ggplot2::xlim(-25, 25) +
+      ggplot2::ylim(-25, 25) +
+      ggplot2::geom_segment(ggplot2::aes(x = 0, y = -25, xend = 0, yend = 25), size = 1, color = "grey55") +
+      ggplot2::geom_segment(ggplot2::aes(x = -25, y = 0, xend = 25, yend = 0), size = 1, color = "grey55") +
       ggplot2::geom_point(size =4, alpha = .8) +
       ggplot2::scale_color_manual(values = c('FB' = 'red', 'CB' = 'darkgreen', 'SI' = 'orange',  'SL'='cornflowerblue',
                                              'CT' = 'gold',  'CH'='violet', 'OT' = 'black', 'SPL' = 'black', 'KN' = 'black')) + # , na.rm = TRUE)+
@@ -122,7 +122,7 @@ pitcher_mvmt_plot <- function(path_to_csv_file, pitcher_name) {
 #' @export
 game_check <- function(path_to_file) {
   game_test <- read.csv(path_to_file) %>%
-    select(PitchNo, Inning, Top.Bottom, PAofInning, PitchofPA, Pitcher, Batter, Balls, Strikes, PitchCall, KorBB, PlayResult) %>%
+    dplyr::select(PitchNo, Inning, Top.Bottom, PAofInning, PitchofPA, Pitcher, Batter, Balls, Strikes, PitchCall, KorBB, PlayResult) %>%
     dplyr::group_by(Inning, Top.Bottom, PAofInning) %>%
     dplyr::mutate(#check = n_distinct(Batter),
       pa_check = ifelse(n_distinct(Batter) == 1, T, F),
@@ -131,13 +131,30 @@ game_check <- function(path_to_file) {
                            ifelse(paste(Balls, Strikes) == lag(paste(Balls, Strikes)) & lag(PitchCall) %in% c('Foul'), T, F)),
       across(c(pa_check, pitch_check, count_check), ~ifelse(is.na(.),T,.) )
     ) %>%
+    ungroup() %>%
+    dplyr::group_by(Inning, Top.Bottom, Batter) %>%
+    dplyr::mutate(
+      distinct_batter = length(unique(PAofInning)),
+      pa1 = unique(PAofInning)[1],
+      pa2 = unique(PAofInning)[2],
+      distinct_batter = ifelse(pa2 > pa1 + 8, T, F),
+      distinct_batter = ifelse(is.na(distinct_batter), T, distinct_batter),
+      pa_check = case_when(
+        distinct_batter == T & pa_check == T ~ T,
+        distinct_batter == F & pa_check == T ~ F,
+        distinct_batter == T & pa_check == F ~ F,
+        distinct_batter == F & pa_check == F ~ F,
+        T ~ pa_check
+      )
+    ) %>%
     ungroup()
 
   print(
     game_test %>%
       dplyr::summarise(pa_check = sum(pa_check == FALSE, na.rm = T),
                        pitch_check = sum(pitch_check == FALSE, na.rm = T),
-                       count = sum(count_check == FALSE, na.rm = T)
+                       count = sum(count_check == FALSE, na.rm = T),
+                       distinct_batter = sum(distinct_batter == FALSE, na.rm = T)
       )
   )
 
@@ -146,8 +163,8 @@ game_check <- function(path_to_file) {
 #
 game_check_db <- function(data, date) {
   game_test <- data %>%
-    filter(Date == date) %>%
-    select(PitchNo, Inning, Top.Bottom, PAofInning, PitchofPA, Pitcher, Batter, Balls, Strikes, PitchCall, KorBB, PlayResult) %>%
+    filter(Date == date)  %>%
+    dplyr::select(PitchNo, Inning, Top.Bottom, PAofInning, PitchofPA, Pitcher, Batter, Balls, Strikes, PitchCall, KorBB, PlayResult) %>%
     dplyr::group_by(Inning, Top.Bottom, PAofInning) %>%
     dplyr::mutate(#check = n_distinct(Batter),
       pa_check = ifelse(n_distinct(Batter) == 1, T, F),
@@ -156,13 +173,30 @@ game_check_db <- function(data, date) {
                            ifelse(paste(Balls, Strikes) == lag(paste(Balls, Strikes)) & lag(PitchCall) %in% c('Foul'), T, F)),
       across(c(pa_check, pitch_check, count_check), ~ifelse(is.na(.),T,.) )
     ) %>%
+    ungroup() %>%
+    dplyr::group_by(Inning, Top.Bottom, Batter) %>%
+    dplyr::mutate(
+      distinct_batter = length(unique(PAofInning)),
+      pa1 = unique(PAofInning)[1],
+      pa2 = unique(PAofInning)[2],
+      distinct_batter = ifelse(pa2 > pa1 + 8, T, F),
+      distinct_batter = ifelse(is.na(distinct_batter), T, distinct_batter),
+      pa_check = case_when(
+        distinct_batter == T & pa_check == T ~ T,
+        distinct_batter == F & pa_check == T ~ F,
+        distinct_batter == T & pa_check == F ~ F,
+        distinct_batter == F & pa_check == F ~ F,
+        T ~ pa_check
+      )
+    ) %>%
     ungroup()
 
   print(
     game_test %>%
       dplyr::summarise(pa_check = sum(pa_check == FALSE, na.rm = T),
                        pitch_check = sum(pitch_check == FALSE, na.rm = T),
-                       count = sum(count_check == FALSE, na.rm = T)
+                       count = sum(count_check == FALSE, na.rm = T),
+                       distinct_batter = sum(distinct_batter == FALSE, na.rm = T )
       )
   )
 
@@ -285,4 +319,95 @@ check_player_names <- function(database_connection){
     dplyr::full_join(yak_c, by = c('NAME' = 'Catcher'), keep = T)%>%
     dplyr::rename(FL_Name = NAME,
                   YT_Name = Catcher)
+}
+
+
+
+pitch_types_factor <- function(data) {
+  data <- data %>%
+    dplyr::mutate(TaggedPitchType = factor(TaggedPitchType, levels= c("Fastball", 'Sinker', 'Cutter', 'Curveball', 'Slider', 'Changeup',
+                                                          'Splitter', 'Knuckleball', 'Other' ))
+                  )
+
+  return(data)
+}
+
+pitch_types_recode <- function(data) {
+  data <- data %>%
+    dplyr::mutate(TaggedPitchType = dplyr::recode(TaggedPitchType, Fastball = "FB", Curveball = 'CB', Sinker = 'SI', Slider = 'SL',
+                                 Cutter = 'CT', Changeup = 'CH', Other = 'OT', Splitter = 'SPL', Knuckleball = 'KN' )
+    )
+
+  return(data)
+}
+
+battrax_clean_format <- function(file_path) {
+
+  cat("Reading BatTrax CSV file...",fill = T)
+  setTxtProgressBar(pb, 1, label = 'hi')
+  cat("\n")
+  Sys.sleep(3)
+
+  cat("Getting CSV file properties...",fill = T)
+  setTxtProgressBar(pb, 2)
+  cat("\n")
+  Sys.sleep(3)
+
+  csv_location <- dirname(file_path)
+
+  file_name <- gsub("\\.csv","",(basename(file_path)))
+
+  cat("Transforming BatTrax CSV file...",fill = T)
+  setTxtProgressBar(pb, 3)
+  cat("\n")
+  Sys.sleep(3)
+
+  csv <- read.csv(file_path) %>%
+    dplyr::rename(TaggedPitchType = PitchType,
+                  RelSpeed = PitchSpeed,
+                  `Top.Bottom` = TopBottom) %>%
+    dplyr::group_by(Inning,`Top.Bottom`,Date) %>%
+    dplyr::mutate(PAofInning = cumsum(!duplicated(Batter) | lag(Batter) != Batter)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(PAofGame = cumsum(!duplicated(Batter) | lag(Batter) != Batter),
+                  PitchUUID = paste0(gsub('-','',Date),"_", substr(HomeTeam,1,3),"_",substr(AwayTeam,1,3), "_", sprintf("%02d",Inning),sprintf("%02d",PitchNo)),
+                  across(c(HomeTeam,AwayTeam,BatterTeam,PitcherTeam,CatcherTeam), ~ '_ADV'))
+
+  csv_cols <- colnames(csv)
+
+  tm_cols <- c("PitchNo", "Date", "Time", "PAofInning", "PitchofPA", "Pitcher",
+               "PitcherId", "PitcherThrows", "PitcherTeam", "Batter", "BatterId",
+               "BatterSide", "BatterTeam", "PitcherSet", "Inning", "Top.Bottom",
+               "Outs", "Balls", "Strikes", "TaggedPitchType", "AutoPitchType",
+               "PitchCall", "KorBB", "HitType", "PlayResult", "OutsOnPlay",
+               "RunsScored", "Notes", "RelSpeed", "VertRelAngle", "HorzRelAngle",
+               "SpinRate", "SpinAxis", "Tilt", "RelHeight", "RelSide", "Extension",
+               "VertBreak", "InducedVertBreak", "HorzBreak", "PlateLocHeight",
+               "PlateLocSide", "ZoneSpeed", "VertApprAngle", "HorzApprAngle",
+               "ZoneTime", "ExitSpeed", "Angle", "Direction", "HitSpinRate",
+               "PositionAt110X", "PositionAt110Y", "PositionAt110Z", "Distance",
+               "LastTrackedDistance", "Bearing", "HangTime", "pfxx", "pfxz",
+               "x0", "y0", "z0", "vx0", "vy0", "vz0", "ax0", "ay0", "az0", "HomeTeam",
+               "AwayTeam", "Stadium", "Level", "League", "GameID", "PitchUUID",
+               "Catcher", "CatcherId", "CatcherTeam")
+
+
+  missing_columns <- setdiff(tm_cols, csv_cols)
+
+  for(col in missing_columns) {
+    csv[[col]] <- NA
+  }
+
+  csv_ <- csv %>%
+    dplyr::select(all_of(tm_cols))
+
+  cat(paste("Writing BatTrax_transformed CSV file to", paste0(csv_location,"/",file_name,"_transformed.csv")),fill = T)
+  setTxtProgressBar(pb, 4)
+  cat("\n")
+  Sys.sleep(3)
+
+  write.csv(csv_, paste0(csv_location,"/",file_name,"_transformed.csv"), na = '', row.names = F)
+
+  cat("DONE!",fill = T)
+  setTxtProgressBar(pb, 5)
 }
