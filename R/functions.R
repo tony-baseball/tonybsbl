@@ -120,7 +120,7 @@ pitcher_mvmt_plot <- function(path_to_csv_file, pitcher_name) {
 #' db_to_bats('2024-05-10')
 #'
 #' @export
-game_check <- function(path_to_file) {
+game_check_csv <- function(path_to_file) {
   game_test <- read.csv(path_to_file) %>%
     dplyr::select(PitchNo, Inning, Top.Bottom, PAofInning, PitchofPA, Pitcher, Batter, Balls, Strikes, PitchCall, KorBB, PlayResult) %>%
     dplyr::group_by(Inning, Top.Bottom, PAofInning) %>%
@@ -162,7 +162,7 @@ game_check <- function(path_to_file) {
   return(game_test)
 }
 #
-game_check_db <- function(data, date) {
+game_check_bats <- function(data, date) {
   game_test <- data %>%
     filter(Date == date)  %>%
     dplyr::select(PitchNo, Inning, Top.Bottom, PAofInning, PitchofPA, Pitcher, Batter, Balls, Strikes, PitchCall, KorBB, PlayResult) %>%
@@ -204,7 +204,48 @@ game_check_db <- function(data, date) {
 
   return(game_test)
 }
+game_check_yak <- function(data, date) {
+  game_test <- data %>%
+    filter(Date == date)  %>%
+    dplyr::select(PitchNo, Inning, Top.Bottom, PAofInning, PitchofPA, Pitcher, Batter, Balls, Strikes, PitchCall, KorBB, PlayResult) %>%
+    dplyr::group_by(Inning, Top.Bottom, PAofInning) %>%
+    dplyr::mutate(#check = n_distinct(Batter),
+      pa_check = ifelse(n_distinct(Batter) == 1, T, F),
+      pitch_check = ifelse(lag(PitchofPA) < PitchofPA, T, F),
+      count_check = ifelse(paste(Balls, Strikes) != lag(paste(Balls, Strikes) ), T,
+                           ifelse(paste(Balls, Strikes) == lag(paste(Balls, Strikes)) & lag(PitchCall) %in% c('FoulBall'), T, F)),
+      across(c(pa_check, pitch_check, count_check), ~ifelse(is.na(.),T,.) )
+    ) %>%
+    ungroup() %>%
+    dplyr::group_by(Inning, Top.Bottom, Batter) %>%
+    dplyr::mutate(
+      distinct_batter = length(unique(PAofInning)),
+      pa1 = unique(PAofInning)[1],
+      pa2 = unique(PAofInning)[2],
+      distinct_batter = ifelse(pa2 > pa1 + 8, T, F),
+      distinct_batter = ifelse(is.na(distinct_batter), T, distinct_batter),
+      pa_check = case_when(
+        distinct_batter == T & pa_check == T ~ T,
+        distinct_batter == F & pa_check == T ~ F,
+        distinct_batter == T & pa_check == F ~ F,
+        distinct_batter == F & pa_check == F ~ F,
+        T ~ pa_check
+      )
+    ) %>%
+    ungroup()%>%
+    select(-c(pa1,pa2))
 
+  print(
+    game_test %>%
+      dplyr::summarise(pa_check = sum(pa_check == FALSE, na.rm = T),
+                       pitch_check = sum(pitch_check == FALSE, na.rm = T),
+                       count = sum(count_check == FALSE, na.rm = T),
+                       distinct_batter = sum(distinct_batter == FALSE, na.rm = T )
+      )
+  )
+
+  return(game_test)
+}
 
 #
 #' quick pitch characteristics table
