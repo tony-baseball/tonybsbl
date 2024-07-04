@@ -121,8 +121,10 @@ pitcher_mvmt_plot <- function(path_to_csv_file, pitcher_name) {
 #'
 #' @export
 game_check_csv <- function(path_to_file) {
-  game_test <- read.csv(path_to_file) %>%
-    dplyr::select(PitchNo, Inning, Top.Bottom, PAofInning, PitchofPA, Pitcher, Batter, Outs, Balls, Strikes, PitchCall, KorBB, PlayResult) %>%
+  game_test <- read.csv(path) %>%
+    dplyr::mutate(runs_sum = sum(RunsScored, na.rm = T),
+                  outs_sum = sum(OutsOnPlay, na.rm = T)) %>%
+    dplyr::select(PitchNo, Inning, Top.Bottom, PAofInning, PitchofPA, Pitcher, Batter, Outs, Balls, Strikes, PitchCall, KorBB, PlayResult, runs_sum, outs_sum) %>%
     dplyr::group_by(Inning, Top.Bottom, PAofInning) %>%
     dplyr::mutate(#check = n_distinct(Batter),
       pa_check = ifelse(n_distinct(Batter) == 1, T, F),
@@ -145,16 +147,19 @@ game_check_csv <- function(path_to_file) {
     ungroup() %>%
     select(-c(pa1,pa2))
 
+
+
   print(
     game_test %>%
       dplyr::summarise(pa_check = sum(pa_check == FALSE, na.rm = T),
                        pitch_check = sum(pitch_check == FALSE, na.rm = T),
                        count = sum(count_check == FALSE, na.rm = T),
                        outs_check = sum(outs_check == FALSE, na.rm = T),
-                       distinct_batter = sum(distinct_batter == FALSE, na.rm = T )
+                       distinct_batter = sum(distinct_batter == FALSE, na.rm = T ),
+                       outs_sum = max(outs_sum),
+                       runs_check = max(runs_sum)
       )
   )
-
   return(game_test)
 }
 #
