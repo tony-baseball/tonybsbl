@@ -121,7 +121,7 @@ pitcher_mvmt_plot <- function(path_to_csv_file, pitcher_name) {
 #'
 #' @export
 game_check_csv <- function(path_to_file) {
-  game_test <- read.csv(path) %>%
+  game_test <- read.csv(path_to_file) %>%
     dplyr::mutate(runs_sum = sum(RunsScored, na.rm = T),
                   outs_sum = sum(OutsOnPlay, na.rm = T)) %>%
     dplyr::select(PitchNo, Inning, Top.Bottom, PAofInning, PitchofPA, Pitcher, Batter, Outs, Balls, Strikes, PitchCall, KorBB, PlayResult, runs_sum, outs_sum) %>%
