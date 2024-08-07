@@ -215,46 +215,48 @@ game_check_db <- function(data, date) {
 #' @export
 check_player_teams <- function(database_connection){
 
-  # Batters, current correct = 0 rows
+  # Batters, current correct = 18 rows
   suppressMessages(
-    print(
-      RSQLite::dbGetQuery(database_connection, 'SELECT * FROM yak_24') %>%
+      batters <<- RSQLite::dbGetQuery(database_connection, 'SELECT * FROM yak_24') %>%
         dplyr::group_by(Batter, BatterTeam) %>%
         dplyr::summarise(
           # savant Batting
-          PA = length(unique(GameID, Inning, PAofInning))
+          PA = n_distinct(GameID, Inning, PAofInning)
         ) %>%
         dplyr::ungroup() %>%
         filter(duplicated(Batter) | duplicated(Batter, fromLast = T))
     )
-  )
+    print(batters)
+    print("Current correct rows = 18. If more than 18, investigate!")
   # Pitchers, current correct = 0 rows
   suppressMessages(
-    print(
-      RSQLite::dbGetQuery(database_connection, 'SELECT * FROM yak_24') %>%
+
+      pitchers <<- RSQLite::dbGetQuery(database_connection, 'SELECT * FROM yak_24') %>%
         dplyr::group_by(Pitcher, PitcherTeam) %>%
         summarise(
           # savant Batting
-          PA = length(unique(GameID, Inning, PAofInning))
+          PA = n_distinct(GameID, Inning, PAofInning)
         ) %>%
         dplyr::ungroup() %>%
         filter(duplicated(Pitcher) | duplicated(Pitcher, fromLast = T))
-    )
+
   )
+  print(pitchers)
+  print("Current correct rows = 14. If more than 14, investigate!")
   # Catchers, current correct = 0 rows
   suppressMessages(
-    print(
-      RSQLite::dbGetQuery(database_connection, 'SELECT * FROM yak_24') %>%
+
+      catchers <<- RSQLite::dbGetQuery(database_connection, 'SELECT * FROM yak_24') %>%
         dplyr::group_by(Catcher, CatcherTeam) %>%
         dplyr::summarise(
           # savant Batting
-          n = n()
+          PA = n_distinct(GameID, Inning, PAofInning)
         ) %>%
         dplyr::ungroup() %>%
         filter(duplicated(Catcher) | duplicated(Catcher, fromLast = T))
     )
-  )
-
+  print(catchers )
+  print("Current correct rows = 2. If more than 2, investigate!")
 }
 
 
