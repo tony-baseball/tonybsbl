@@ -413,3 +413,35 @@ battrax_clean_format <- function(file_path) {
   cat("DONE!",fill = T)
   setTxtProgressBar(pb, 5)
 }
+
+select_common_columns <- function(data){
+  data <- data %>%
+    select(PitchNo, Date, Time, PAofInning, PitchofPA, Pitcher,
+           PitcherId, PitcherThrows, PitcherTeam, Batter, BatterId,
+           BatterSide, BatterTeam, PitcherSet, Inning, Top.Bottom,
+           Outs, Balls, Strikes, TaggedPitchType, AutoPitchType,
+           PitchClass, PitchCall, KorBB, TaggedHitType, PlayResult,
+           OutsOnPlay, RunsScored, Notes, RelSpeed, arm_angle,
+           arm_angle_180, arm_angle_savant, tj_stuff_plus, VertRelAngle, HorzRelAngle,
+           SpinRate, SpinVeloRatio, SpinAxis, Tilt, SpinAxis_inferred,
+           Tilt_inferred, RelHeight, RelSide, Extension, VertBreak,
+           InducedVertBreak, HorzBreak, PlateLocHeight, PlateLocSide,
+           ZoneSpeed, VertApprAngle, HorzApprAngle, ZoneTime, ExitSpeed,
+           Angle, Direction, HitSpinRate, Distance, LastTrackedDistance, Bearing,
+           ContactPositionX, ContactPositionY,
+           ContactPositionZ, Catcher, CatcherId,
+           CatcherThrows, CatcherTeam,
+           xBA, xSLG, woba_weight,
+           xwOBACON, xwOBA, Umpire,
+           PlayID,
+           barrel, sweetspot, HitDirection1, HitDirection2,
+           hc_x, hc_y, launch_speed, launch_angle, bbe, hardhit,
+           weakhit, whiff, swing, take, in_zone, SEASON,
+           arm_length, height_inches, shoulder_pos,
+           run_value, is_pa, is_ab, is_hit, reach_base, total_bases,
+           woba_value,
+
+           HomeTeam, AwayTeam, Stadium, Level,
+           League, GameID, PitchUID,
+    )
+}
