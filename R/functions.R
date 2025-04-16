@@ -217,46 +217,70 @@ check_player_teams <- function(database_connection){
 
   # Batters, current correct = 18 rows
   suppressMessages(
-      batters <<- RSQLite::dbGetQuery(database_connection, 'SELECT * FROM yak_24') %>%
-        dplyr::group_by(Batter, BatterTeam) %>%
-        dplyr::summarise(
-          # savant Batting
-          PA = n_distinct(GameID, Inning, PAofInning)
-        ) %>%
-        dplyr::ungroup() %>%
+      batters <<- RSQLite::dbGetQuery(database_connection, 'SELECT
+  Batter,
+  BatterId,
+  SEASON,
+  BatterTeam,
+  COUNT(*) AS P,
+  SUM(is_pa) AS PA
+FROM pitch_data
+GROUP BY Batter, BatterId, SEASON, BatterTeam;') %>%
+        # dplyr::group_by(Batter, SEASON, BatterTeam) %>%
+        # dplyr::summarise(
+        #   P = n(),
+        #   PA = sum(is_pa, na.rm = T)
+        # ) %>%
+        # dplyr::ungroup() %>%
         filter(duplicated(Batter) | duplicated(Batter, fromLast = T))
     )
     print(batters)
-    print("Current correct rows = 18. If more than 18, investigate!")
+    # print("Current correct rows = 18. If more than 18, investigate!")
   # Pitchers, current correct = 0 rows
   suppressMessages(
 
-      pitchers <<- RSQLite::dbGetQuery(database_connection, 'SELECT * FROM yak_24') %>%
-        dplyr::group_by(Pitcher, PitcherTeam) %>%
-        summarise(
-          # savant Batting
-          PA = n_distinct(GameID, Inning, PAofInning)
-        ) %>%
-        dplyr::ungroup() %>%
+      pitchers <<- RSQLite::dbGetQuery(database_connection, 'SELECT
+  Pitcher,
+  PitcherId,
+  SEASON,
+  PitcherTeam,
+  COUNT(*) AS P,
+  SUM(is_pa) AS PA
+FROM pitch_data
+GROUP BY Pitcher, PitcherId, SEASON, PitcherTeam;') %>%
+        # dplyr::group_by(Pitcher, PitcherTeam) %>%
+        # summarise(
+        #   P = n(),
+        #   PA = sum(is_pa, na.rm = T)
+        # ) %>%
+        # dplyr::ungroup() %>%
         filter(duplicated(Pitcher) | duplicated(Pitcher, fromLast = T))
 
   )
   print(pitchers)
-  print("Current correct rows = 14. If more than 14, investigate!")
+  # print("Current correct rows = 14. If more than 14, investigate!")
   # Catchers, current correct = 0 rows
   suppressMessages(
 
-      catchers <<- RSQLite::dbGetQuery(database_connection, 'SELECT * FROM yak_24') %>%
-        dplyr::group_by(Catcher, CatcherTeam) %>%
-        dplyr::summarise(
-          # savant Batting
-          PA = n_distinct(GameID, Inning, PAofInning)
-        ) %>%
-        dplyr::ungroup() %>%
+      catchers <<- RSQLite::dbGetQuery(database_connection, 'SELECT
+  Catcher,
+  CatcherId,
+  SEASON,
+  CatcherTeam,
+  COUNT(*) AS P,
+  SUM(is_pa) AS PA
+FROM pitch_data
+GROUP BY Catcher, CatcherId, SEASON, CatcherTeam;') %>%
+        # dplyr::group_by(Catcher, CatcherTeam) %>%
+        # dplyr::summarise(
+        #   P = n(),
+        #   PA = sum(is_pa, na.rm = T)
+        # ) %>%
+        # dplyr::ungroup() %>%
         filter(duplicated(Catcher) | duplicated(Catcher, fromLast = T))
     )
   print(catchers )
-  print("Current correct rows = 2. If more than 2, investigate!")
+  # print("Current correct rows = 2. If more than 2, investigate!")
 }
 
 
@@ -270,7 +294,7 @@ check_player_teams <- function(database_connection){
 #'
 #' @export
 check_player_names <- function(database_connection){
-  # ----- Match Player Names -----
+  # ----- MatchPos Player Names -----
   # This code down here will take each player's name from the frontier league website and compare it up against Yakkertech player names.
   # sometimes, YT playernames are not formatted/spelled correctly, so it will cause issues when trying to join stats from both sources
   # ideally, we wont have any NA in either name column, but that's currently not the case
@@ -280,46 +304,46 @@ check_player_names <- function(database_connection){
   # Then let me know the incorrect spelling, and what the spelling should be!!!!
 
   # Hitters, current correct rows for hit should be 215
-  fl_h <- RSQLite::dbGetQuery(database_connection, 'SELECT * from front24 order by NAME') %>%
-    filter(!grepl('P', POS)) %>%
-    filter(!grepl('Player|Team', NAME)) %>%
+  fl_h <- RSQLite::dbGetQuery(database_connection, 'SELECT * from stats_hitting_player order by Player') %>%
+    filter(!grepl('P', Pos)) %>%
+    filter(!grepl('Player|Team', Player)) %>%
     filter(AB > 0) %>%
-    select(NAME, TEAM)
+    select(Player, player_id_fl, Team)
 
-  yak_h <- RSQLite::dbGetQuery(database_connection, 'SELECT distinct Batter from yak_24 order by Batter')
+  yak_h <- RSQLite::dbGetQuery(database_connection, 'SELECT distinct Batter, BatterId from pitch_data order by Batter')
 
   hit <<- fl_h %>%
-    dplyr::full_join(yak_h, by = c('NAME' = 'Batter'), keep = T) %>%
-    dplyr::rename(FL_Name = NAME,
+    dplyr::full_join(yak_h, by = c('Player' = 'Batter', 'player_id_fl' = 'BatterId'), keep = T) %>%
+    dplyr::rename(FL_Name = Player,
                   YT_Name = Batter)
 
   # Pitchers, current correct rows for pitch should be 231
-  fl_p <- RSQLite::dbGetQuery(database_connection, 'SELECT * from front_p24 order by NAME') %>%
-    filter(!grepl('Player|Team', NAME)) %>%
-    filter(APP > 0) %>%
-    select(NAME, TEAM)
+  fl_p <- RSQLite::dbGetQuery(database_connection, 'SELECT * from stats_pitching_player order by Player') %>%
+    filter(!grepl('Player|Team', Player)) %>%
+    filter(G > 0) %>%
+    select(Player,player_id_fl, Team)
 
-  yak_p <- RSQLite::dbGetQuery(database_connection, 'SELECT distinct Pitcher from yak_24 order by Pitcher')
+  yak_p <- RSQLite::dbGetQuery(database_connection, 'SELECT distinct Pitcher, PitcherId from pitch_data order by Pitcher')
 
   pitch <<- fl_p %>%
-    dplyr::full_join(yak_p, by = c('NAME' = 'Pitcher'), keep = T)%>%
-    dplyr::rename(FL_Name = NAME,
+    dplyr::full_join(yak_p, by = c('Player' = 'Pitcher', 'player_id_fl' = 'PitcherId'), keep = T)%>%
+    dplyr::rename(FL_Name = Player,
                   YT_Name = Pitcher)
 
 
   # Catchers, current correct rows for catch should be 48
   # Pitchers and batters are a little more straight forward since people pay attention to those when tagging, but there are usually mistakes with catchers
-  fl_c <- RSQLite::dbGetQuery(database_connection, 'SELECT * from front24 order by NAME') %>%
-    filter(!grepl('Player|Team', NAME)) %>%
+  fl_c <- RSQLite::dbGetQuery(database_connection, 'SELECT * from stats_hitting_player order by Player') %>%
+    filter(!grepl('Player|Team', Player)) %>%
     filter(G > 0) %>%
-    filter(grepl('C', POS)) %>%
-    select(NAME, TEAM, POS)
+    filter(grepl('C', Pos)) %>%
+    select(Player, player_id_fl, Team, Pos)
 
-  yak_c <- RSQLite::dbGetQuery(database_connection, 'SELECT distinct Catcher from yak_24 order by Catcher')
+  yak_c <- RSQLite::dbGetQuery(database_connection, 'SELECT distinct Catcher, CatcherId from pitch_data order by Catcher')
 
   catch <<- fl_c %>%
-    dplyr::full_join(yak_c, by = c('NAME' = 'Catcher'), keep = T)%>%
-    dplyr::rename(FL_Name = NAME,
+    dplyr::full_join(yak_c, by = c('Player' = 'Catcher', 'player_id_fl' = 'CatcherId'), keep = T)%>%
+    dplyr::rename(FL_Name = Player,
                   YT_Name = Catcher)
 }
 
