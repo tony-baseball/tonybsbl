@@ -464,8 +464,26 @@ select_common_columns <- function(data){
            arm_length, height_inches, shoulder_pos,
            run_value, is_pa, is_ab, is_hit, reach_base, total_bases,
            woba_value,
-
+           contact_pobability, contact_over_expected, power_value, decision_value,
            HomeTeam, AwayTeam, Stadium, Level,
            League, GameID, PitchUID,
     )
 }
+
+
+aws_db_query <- function(query) {
+  aws_con <- DBI::dbConnect(RMySQL::MySQL(), dbname = "frontier_league", host = "frontier-league.czcooiea00wp.us-east-2.rds.amazonaws.com",
+                            port = 3306, user = "admin", password = "boomers25")
+
+  DBI::dbGetQuery(aws_con, query)
+
+}
+
+aws_db_tables <- function() {
+  aws_con <- DBI::dbConnect(RMySQL::MySQL(), dbname = "frontier_league", host = "frontier-league.czcooiea00wp.us-east-2.rds.amazonaws.com",
+                            port = 3306, user = "admin", password = "boomers25")
+
+  DBI::dbListTables(aws_con)
+
+}
+
