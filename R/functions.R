@@ -487,3 +487,17 @@ aws_db_tables <- function() {
 
 }
 
+aws_db_colnames <- function(table_name, sort = NULL) {
+  aws_con <- DBI::dbConnect(RMySQL::MySQL(), dbname = "frontier_league", host = "frontier-league.czcooiea00wp.us-east-2.rds.amazonaws.com",
+                            port = 3306, user = "admin", password = "boomers25")
+
+  df <- DBI::dbGetQuery(aws_con, glue::glue("select * from {table_name} limit 1"))
+
+  if(is.null(sort) || sort == F) {
+    colnames(df)
+  } else if(sort == T) {
+    sort(colnames(df))
+  }
+
+}
+
